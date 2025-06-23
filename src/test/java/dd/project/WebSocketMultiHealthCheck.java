@@ -2,18 +2,17 @@ package dd.project;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Properties;
 import java.util.HashMap;
 import java.util.concurrent.*;
 
-import javax.mail.Authenticator;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.PasswordAuthentication;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.PasswordAuthentication;
+import jakarta.mail.Session;
+import jakarta.mail.Transport;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -23,7 +22,7 @@ public class WebSocketMultiHealthCheck {
     public static void main(String[] args) {
         Map<String, String> webSockets = new HashMap<>();
         webSockets.put("apollo2.humanbrain.in WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
-     //   webSockets.put("dev2mani.humanbrain.in: WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
+        // webSockets.put("dev2mani.humanbrain.in WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
 
         for (Map.Entry<String, String> entry : webSockets.entrySet()) {
             String serverName = entry.getKey();
@@ -32,7 +31,7 @@ public class WebSocketMultiHealthCheck {
             try {
                 testWebSocketConnection(serverName, webSocketUrl);
             } catch (Exception e) {
-                System.out.println("❌ Exception while checking " + serverName + ": " + e.getMessage());
+                System.err.println("❌ Exception while checking " + serverName + ": " + e.getMessage());
                 sendAlertMail(serverName, e.getMessage(), "222 1000", "Divya D", 193, "Neurovoyager");
             }
         }
@@ -46,7 +45,7 @@ public class WebSocketMultiHealthCheck {
 
         WebSocketClient client = new WebSocketClient(URI.create(webSocketUrl)) {
 
-            private StringBuilder responseBuffer = new StringBuilder();
+            private final StringBuilder responseBuffer = new StringBuilder();
             private ScheduledExecutorService scheduler;
             private ScheduledFuture<?> timeoutFuture;
 
@@ -64,7 +63,7 @@ public class WebSocketMultiHealthCheck {
 
                 scheduler = Executors.newSingleThreadScheduledExecutor();
                 timeoutFuture = scheduler.schedule(() -> {
-                    System.out.println("❌ Timeout (15 seconds) while waiting for response from " + serverName);
+                    System.err.println("❌ Timeout (15 seconds) waiting for response from " + serverName);
                     latch.countDown();
                     close();
                 }, 15, TimeUnit.SECONDS);
@@ -95,7 +94,7 @@ public class WebSocketMultiHealthCheck {
 
             @Override
             public void onError(Exception ex) {
-                System.out.println("❌ Error in " + serverName + " WebSocket: " + ex.getMessage());
+                System.err.println("❌ Error in " + serverName + " WebSocket: " + ex.getMessage());
                 if (timeoutFuture != null) timeoutFuture.cancel(true);
                 if (scheduler != null) scheduler.shutdownNow();
                 latch.countDown();
@@ -105,20 +104,19 @@ public class WebSocketMultiHealthCheck {
         try {
             client.connectBlocking();
         } catch (Exception e) {
-            System.out.println("❌ Could not connect to " + serverName + " WebSocket: " + e.getMessage());
+            System.err.println("❌ Could not connect to " + serverName + " WebSocket: " + e.getMessage());
             sendAlertMail(serverName, e.getMessage(), "222 1000", "Divya D", 193, "Neurovoyager");
             return;
         }
 
-        latch.await(); // Wait until message received or timeout
+        latch.await(); // Wait for response or timeout
 
         if (success[0]) {
-            System.out.println("✅ Connection to " + serverName + " succeeded. No need to send mail.");
+            System.out.println("✅ Connection to " + serverName + " succeeded. No alert needed.");
         } else {
             sendAlertMail(serverName, "No complete response received.", "222 1000", "Divya D", 193, "Neurovoyager");
         }
     }
-
 
     private static void sendAlertMail(String serverName, String reason, String query, String user, int userId, String page) {
         String[] to = {"sriramv@htic.iitm.ac.in"};
@@ -126,15 +124,16 @@ public class WebSocketMultiHealthCheck {
         String from = "gayathri@htic.iitm.ac.in";
         String host = "smtp.gmail.com";
 
-        Properties properties = System.getProperties();
+        var properties = System.getProperties();
         properties.put("mail.smtp.host", host);
         properties.put("mail.smtp.port", "465");
         properties.put("mail.smtp.ssl.enable", "true");
         properties.put("mail.smtp.auth", "true");
 
         Session session = Session.getInstance(properties, new Authenticator() {
+            @Override
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("automationsoftware25@gmail.com", "wjzcgaramsqvagxu"); // 🔒 Use secure storage in production
+                return new PasswordAuthentication("automationsoftware25@gmail.com", "wjzcgaramsqvagxu"); // ⚠️ Use environment variables for secrets in prod
             }
         });
 
