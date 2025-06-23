@@ -68,7 +68,7 @@
 <dependency>
   <groupId>org.java-websocket</groupId>
   <artifactId>Java-WebSocket</artifactId>
-  <version>1.5.4</version>
+  <version>1.5.3</version>
 </dependency>
 <dependency>
   <groupId>org.testng</groupId>
@@ -83,9 +83,10 @@
 </dependency>
 <dependency>
     <groupId>com.sun.mail</groupId>
-    <artifactId>javax.mail</artifactId>
-    <version>1.6.2</version> <!-- or the latest version -->
+    <artifactId>jakarta.mail</artifactId>
+    <version>2.1.1</version>
 </dependency>
+
 <dependency>
     <groupId>org.slf4j</groupId>
     <artifactId>slf4j-simple</artifactId>
