@@ -107,7 +107,7 @@ public class pp5alert {
     }  
 
     private void sendEmailAlert(String todayFiles, String oldFiles, int todayFileCount, int oldFileCount, String machineName) {
-        String[] to = {"annotation.divya@gmail.com"};
+        String[] to = {"nathan.i@htic.iitm.ac.in"};
         String[] cc = {"venip@htic.iitm.ac.in"};
         String[] bcc = {"divya.d@htic.iitm.ac.in"};
 

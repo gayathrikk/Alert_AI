@@ -18,7 +18,8 @@
     <maven.compiler.target>1.7</maven.compiler.target>
   </properties>
 
-  <dependencies>
+  
+    <dependencies>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -38,11 +39,10 @@
     <scope>test</scope>
     </dependency>
     <dependency>
-    <groupId>org.seleniumhq.selenium</groupId>
-    <artifactId>selenium-java</artifactId>
-    <version>3.141.59</version>
-</dependency>
-
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>3.141.59</version>
+    </dependency>
     <dependency>
     <groupId>org.seleniumhq.selenium</groupId>
     <artifactId>selenium-chrome-driver</artifactId>
@@ -53,7 +53,30 @@
         <artifactId>rest-assured</artifactId>
         <version>4.4.0</version> <!-- Use the latest version -->
     </dependency>
-      <dependency>
+    <dependency>
+        <groupId>mysql</groupId>
+        <artifactId>mysql-connector-java</artifactId>
+        <version>8.0.26</version> 
+    </dependency>
+    <!-- BrowserMob Proxy -->
+<dependency>
+    <groupId>net.lightbody.bmp</groupId>
+    <artifactId>browsermob-core</artifactId>
+    <version>2.1.5</version> <!-- or the latest version -->
+    <scope>test</scope>
+</dependency>
+<dependency>
+  <groupId>org.java-websocket</groupId>
+  <artifactId>Java-WebSocket</artifactId>
+  <version>1.5.4</version>
+</dependency>
+<dependency>
+  <groupId>org.testng</groupId>
+  <artifactId>testng</artifactId>
+  <version>7.10.1</version>
+  <scope>test</scope>
+</dependency>
+ <dependency>
     <groupId>com.jcraft</groupId>
     <artifactId>jsch</artifactId>
     <version>0.1.55</version> <!-- Or the latest version available -->
@@ -68,8 +91,28 @@
     <artifactId>slf4j-simple</artifactId>
     <version>1.7.36</version>  <!-- You can use the latest version -->
 </dependency>
+ <!-- 
+    <dependency>
+    <groupId>io.github.bonigarcia</groupId>
+    <artifactId>webdrivermanager</artifactId>
+    <version>5.5.3</version>
+    <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+      <version>4.18.1</version>
+    </dependency> -->
+   
+<dependency>
+    <groupId>org.seleniumhq.selenium</groupId>
+    <artifactId>selenium-chrome-driver</artifactId>
+    <version>4.16.1</version>
+</dependency>
+ 
+    
+</dependencies>
 
-   </dependencies>
 
 
   <build>
@@ -87,7 +130,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>3.0.0-M5</version>
           <configuration>
-            <test>dd.project.pp5alert</test>
+            <test>dd.project.WebSocketMultiHealthCheck</test>
           </configuration>
         </plugin>
       </plugins>
