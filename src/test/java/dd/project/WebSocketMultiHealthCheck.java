@@ -2,17 +2,12 @@ package dd.project;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.Properties;
 import java.util.HashMap;
 import java.util.concurrent.*;
 
-import jakarta.mail.Authenticator;
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import javax.mail.*;
+import javax.mail.internet.*;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -22,18 +17,47 @@ public class WebSocketMultiHealthCheck {
     public static void main(String[] args) {
         Map<String, String> webSockets = new HashMap<>();
         webSockets.put("apollo2.humanbrain.in WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
-        // webSockets.put("dev2mani.humanbrain.in WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
+        webSockets.put("dev2mani.humanbrain.in WebSocket", "wss://apollo2.humanbrain.in/aiAgentServer/ws/ai_agent");
 
+        Map<String, String> httpUrls = new HashMap<>();
+        httpUrls.put("Apollo2 Recommendation API", "https://apollo2.humanbrain.in/aiAgentServer/agent/recomendation?user_query=hi&page_context=%22%7B%5C%22ssid%5C%22%3A85%2C%5C%22seriesType%5C%22%3A%5C%22NISSL%5C%22%2C%5C%22secid%5C%22%3A52%2C%5C%22biosampleId%5C%22%3A%5C%22201%5C%22%7D%22&page=Atlas%20Editor&first=true&action_context=null");
+
+        // Run WebSocket checks
         for (Map.Entry<String, String> entry : webSockets.entrySet()) {
             String serverName = entry.getKey();
             String webSocketUrl = entry.getValue();
-
             try {
                 testWebSocketConnection(serverName, webSocketUrl);
             } catch (Exception e) {
                 System.err.println("❌ Exception while checking " + serverName + ": " + e.getMessage());
                 sendAlertMail(serverName, e.getMessage(), "222 1000", "Divya D", 193, "Neurovoyager");
             }
+        }
+
+        // Run HTTP GET checks
+        for (Map.Entry<String, String> entry : httpUrls.entrySet()) {
+            String name = entry.getKey();
+            String url = entry.getValue();
+            testHttpGetUrl(name, url);
+        }
+    }
+
+    private static void testHttpGetUrl(String name, String url) {
+        System.out.println("🌐 Checking HTTP GET: " + name + " → " + url);
+        try {
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            int responseCode = conn.getResponseCode();
+            System.out.println("✅ " + name + " responded with HTTP status: " + responseCode);
+
+            if (responseCode != 200) {
+                sendAlertMail(name, "HTTP GET returned status " + responseCode, "hi", "Divya D", 193, "Atlas Editor");
+            }
+        } catch (Exception e) {
+            System.err.println("❌ HTTP GET failed for " + name + ": " + e.getMessage());
+            sendAlertMail(name, e.getMessage(), "hi", "Divya D", 193, "Atlas Editor");
         }
     }
 
@@ -44,7 +68,6 @@ public class WebSocketMultiHealthCheck {
         final boolean[] success = {false};
 
         WebSocketClient client = new WebSocketClient(URI.create(webSocketUrl)) {
-
             private final StringBuilder responseBuffer = new StringBuilder();
             private ScheduledExecutorService scheduler;
             private ScheduledFuture<?> timeoutFuture;
@@ -73,11 +96,9 @@ public class WebSocketMultiHealthCheck {
             public void onMessage(String message) {
                 System.out.println("📥 Received: " + message);
                 responseBuffer.append(message);
-
                 if (message.contains("###END")) {
                     if (timeoutFuture != null) timeoutFuture.cancel(true);
-                    System.out.println("✅ Full AI Agent response received from " + serverName + ":");
-                    System.out.println(responseBuffer.toString());
+                    System.out.println("✅ Full AI Agent response received from " + serverName);
                     success[0] = true;
                     latch.countDown();
                     close();
@@ -104,15 +125,15 @@ public class WebSocketMultiHealthCheck {
         try {
             client.connectBlocking();
         } catch (Exception e) {
-            System.err.println("❌ Could not connect to " + serverName + " WebSocket: " + e.getMessage());
+            System.err.println("❌ Could not connect to " + serverName + ": " + e.getMessage());
             sendAlertMail(serverName, e.getMessage(), "222 1000", "Divya D", 193, "Neurovoyager");
             return;
         }
 
-        latch.await(); // Wait for response or timeout
+        latch.await();
 
         if (success[0]) {
-            System.out.println("✅ Connection to " + serverName + " succeeded. No alert needed.");
+            System.out.println("✅ WebSocket connection to " + serverName + " succeeded.");
         } else {
             sendAlertMail(serverName, "No complete response received.", "222 1000", "Divya D", 193, "Neurovoyager");
         }
@@ -124,20 +145,19 @@ public class WebSocketMultiHealthCheck {
         String from = "gayathri@htic.iitm.ac.in";
         String host = "smtp.gmail.com";
 
-        var properties = System.getProperties();
-        properties.put("mail.smtp.host", host);
-        properties.put("mail.smtp.port", "465");
-        properties.put("mail.smtp.ssl.enable", "true");
-        properties.put("mail.smtp.auth", "true");
+        Properties props = System.getProperties();
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", "587");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.auth", "true");
 
-        Session session = Session.getInstance(properties, new Authenticator() {
-            @Override
+        Session session = Session.getInstance(props, new Authenticator() {
             protected PasswordAuthentication getPasswordAuthentication() {
-                return new PasswordAuthentication("automationsoftware25@gmail.com", "wjzcgaramsqvagxu"); // ⚠️ Use environment variables for secrets in prod
+                return new PasswordAuthentication("automationsoftware25@gmail.com", "wjzcgaramsqvagxu");
             }
         });
 
-        session.setDebug(true);
+        session.setDebug(false);
 
         try {
             MimeMessage message = new MimeMessage(session);
@@ -150,14 +170,14 @@ public class WebSocketMultiHealthCheck {
                 message.addRecipient(Message.RecipientType.CC, new InternetAddress(ccRecipient));
             }
 
-            message.setSubject("AI Agent - WebSocket Connection Issue Alert: " + serverName);
+            message.setSubject("AI Agent - Connection Issue Alert: " + serverName);
 
             String currentTime = java.time.LocalDateTime.now().toString();
 
             String content = "<div style='font-family: Arial, sans-serif; font-size: 14px; color: #333;'>"
-                    + "<h3 style='color: #D9534F;'>🚨 AI Agent WebSocket Connection Failure Alert</h3>"
+                    + "<h3 style='color: #D9534F;'>🚨 AI Agent Connection Failure Alert</h3>"
                     + "<p>Hi Team,</p>"
-                    + "<p><strong>WebSocket connection to <span style='color:#5bc0de;'>" + serverName + "</span> failed at <strong>" + currentTime + "</strong>.</strong></p>"
+                    + "<p><strong>Connection to <span style='color:#5bc0de;'>" + serverName + "</span> failed at <strong>" + currentTime + "</strong>.</strong></p>"
                     + "<p><u><strong>Error Details:</strong></u></p>"
                     + "<ul>"
                     + "<li><strong>Page:</strong> " + page + "</li>"
@@ -166,18 +186,18 @@ public class WebSocketMultiHealthCheck {
                     + "<li><strong>Reason:</strong> " + reason + "</li>"
                     + "</ul>"
                     + "<p><u><strong>Action:</strong></u></p>"
-                    + "<p>Please check WebSocket server status, nginx proxy configuration, and SSL certificate.</p>"
+                    + "<p>Please check WebSocket/HTTP server status, nginx configuration, or SSL certificate.</p>"
                     + "<br><p style='color: #555;'>Regards,<br><b>Automated Monitoring</b></p>"
                     + "</div>";
 
             message.setContent(content, "text/html");
 
-            System.out.println("Sending reachability alert email...");
+            System.out.println("📧 Sending alert email...");
             Transport.send(message);
-            System.out.println("Email sent successfully.");
+            System.out.println("✅ Alert email sent successfully.");
 
         } catch (MessagingException mex) {
-            mex.printStackTrace();
+            System.err.println("❌ Email sending failed: " + mex.getMessage());
         }
     }
 }
